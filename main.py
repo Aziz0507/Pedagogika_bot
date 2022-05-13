@@ -111,14 +111,14 @@ def scan_user(message):
 def spam_info():
     mydb = connect_to_base("root","","pedagogika")
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT distinct(telegram),fio, phone,gname ,types FROM users")
+    mycursor.execute("SELECT distinct(telegram),fio, phone, gname ,types FROM users")
     myresult = mycursor.fetchall()
     
     for i in myresult:
         my_post_cursor = mydb.cursor()
-        my_post_cursor.execute("SELECT * FROM posts  pp where pp.state = 'select' and  pp.id not in (Select post_id FROM post_send) and pp.user_id not in(SELECT telegram FROM post_send)")
+        my_post_cursor.execute("SELECT pp.*,(select phone from users where telegram = pp.user_id) as phone  FROM posts  pp where pp.state = 'select' and  pp.id not in (Select post_id FROM post_send) and pp.user_id not in(SELECT telegram FROM post_send)")
         mypost = my_post_cursor.fetchall()
-        print(i[4])
+       
 
         if i[4] == 'client':
             for y in mypost:                
@@ -134,9 +134,12 @@ def spam_info():
                 
                 photos = y[2]
                 text = y[3]
+                cont = y[5]
+                print(cont)
                 time.sleep(0.3)
-                bot.send_photo(int(i[0]) , photos, caption = text)
-                print(i[0])
+                bot.send_photo(int(i[0]) , photos, caption = f'{text}\nMurojat uchun : {cont}')
+                
+
 
 
 """def proverca_post_send(post_id, telegram):
