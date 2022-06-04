@@ -1,6 +1,7 @@
 from uuid import uuid4
 import telebot
 from telebot.types import InlineKeyboardButton,InlineKeyboardMarkup,KeyboardButton,ReplyKeyboardMarkup,KeyboardButton
+from telebot import types
 from conf import TOKEN,Files, Posts,bot 
 import json
 import mysql.connector
@@ -33,8 +34,7 @@ def add_start_user(message):
     val = (name, telegram_id)
 
     mycursor.execute(sql, val)
-    mydb.commit()    
-    my_uuid.clear_user()
+    mydb.commit()
 
 def scan_start_user(message):
     mydb = connect_to_base("root","","pedagogika")
@@ -46,10 +46,23 @@ def scan_start_user(message):
         asd = f'salom {name} bot xush kelibsiz!\nBu bot Uzini maxsulotini sotish uchun kerak buladi.'
         bot.send_message(message.chat.id, asd)
         add_start_user(message)
-    else:
-        bot.send_message(message.chat.id, 'Qaytganingizdan xursandman')
+        bot.send_message(message.chat.id, "Agar siz post qoymoqchi bo'sangiz /reg tugamsini bosing5")
+    elif myresult[0]>0:
+        bot.send_message(message.chat.id, "Qaytganingizdan xursandman!")
+        mycursor_S = mydb.cursor()
+        mycursor_S.execute(f"SELECT * FROM users where telegram =  {str(message.chat.id)}")
+        myresult_s = mycursor.fetchall()
+        for i in myresult_s:
+            print(i)
+            if i[5] == 'user':
+                my_uuid.create_post(message.chat.id)
+            elif i[5] == 'client':
+                bot.send_message(message.chat.id, "Agar siz post qoymoqchi bo'sangiz /reg tugamsini bosing5")
+                
+                                                
         
-
+        #my_uuid.create_post(message.chat.id)
+            
 
     
 
@@ -111,33 +124,37 @@ def scan_user(message):
 def spam_info():
     mydb = connect_to_base("root","","pedagogika")
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT distinct(telegram),fio, phone, gname ,types FROM users")
+    mycursor.execute("SELECT distinct(telegram),fio, phone, gname ,types FROM users WHERE types = 'client'")
     myresult = mycursor.fetchall()
+
     
     for i in myresult:
+        print(i[0])    
         my_post_cursor = mydb.cursor()
-        my_post_cursor.execute("SELECT pp.*,(select phone from users where telegram = pp.user_id) as phone  FROM posts  pp where pp.state = 'select' and  pp.id not in (Select post_id FROM post_send) and pp.user_id not in(SELECT telegram FROM post_send)")
+        #sql = "SELECT pp.*,(select phone from users where telegram = pp.user_id) as phone  FROM posts  pp where pp.state = 'select' and  pp.id not in (Select post_id FROM post_send) and pp.user_id not in(SELECT telegram FROM post_send)"
+        sql = f"SELECT pp.*,(select phone from users where telegram = pp.user_id) as phone FROM posts pp WHERE pp.id not in (SELECT post_id FROM post_send WHERE telegram in ('{i[0]}'))"
+
+        my_post_cursor.execute(sql)
         mypost = my_post_cursor.fetchall()
        
 
-        if i[4] == 'client':
-            for y in mypost:                
+        for y in mypost:                
+            
+            mycursor_s = mydb.cursor()
+            posts_s = my_post.get_posts()
+            sql = "INSERT INTO post_send (telegram, post_id) VALUES (%s, %s)"
+            val = (i[0], y[0])
+        
+            mycursor_s.execute(sql, val)
+            mydb.commit()
                 
-                mydb = connect_to_base("root","","pedagogika")
-                mycursor = mydb.cursor()
-                posts = my_post.get_posts()
-                sql = "INSERT INTO post_send (telegram, post_id) VALUES (%s, %s)"
-                val = (i[0], y[0])
-                mycursor.execute(sql, val)
-                mydb.commit()
                 
-                
-                photos = y[2]
-                text = y[3]
-                cont = y[5]
-                print(cont)
-                time.sleep(0.3)
-                bot.send_photo(int(i[0]) , photos, caption = f'{text}\nMurojat uchun : {cont}')
+            photos = y[2]
+            text = y[3]
+            cont = y[5]
+            #print(cont)
+            #time.sleep(0.3)
+            bot.send_photo(int(i[0]) , photos, caption = f'{text}\n Murojat uchun : {cont}')
                 
 
 
