@@ -46,7 +46,7 @@ def scan_start_user(message):
         asd = f'salom {name} bot xush kelibsiz!\nBu bot Uzini maxsulotini sotish uchun kerak buladi.'
         bot.send_message(message.chat.id, asd)
         add_start_user(message)
-        bot.send_message(message.chat.id, "Agar siz post qoymoqchi bo'sangiz /reg tugamsini bosing5")
+        
     elif myresult[0]>0:
         bot.send_message(message.chat.id, "Qaytganingizdan xursandman!")
         mycursor_S = mydb.cursor()
@@ -56,8 +56,6 @@ def scan_start_user(message):
             print(i)
             if i[5] == 'user':
                 my_uuid.create_post(message.chat.id)
-            elif i[5] == 'client':
-                bot.send_message(message.chat.id, "Agar siz post qoymoqchi bo'sangiz /reg tugamsini bosing5")
                 
                                                 
         
@@ -241,7 +239,7 @@ def add_fio(message):
 
 def add_phone(message):
     my_uuid.add_chat_id(message.chat.id)
-    my_uuid.add_phone(message.contact.phone_number, message.chat.id)
+    my_uuid.add_phone(message.contact.phone_number, message.chat.id, reply_markup=telebot.types.ReplyKeyboardRemove())
     check_user(message.chat.id)
     print(my_uuid.users_info)
     asd = 'sizning telefon qabul qilindi'
@@ -299,7 +297,9 @@ def send_welcome(message):
         if len(myresult) > 0:
             if myresult[0][4] == 'admin':
                 print('admin')
-                admin_pages(message)    
+                admin_pages(message)
+            elif myresult[0][4] == 'user':
+                scan_start_user(message)
             else:
                 print('user')
                 bot.send_message(message.chat.id, 'shu yaqin orada yangi postlar chiqadi!')
