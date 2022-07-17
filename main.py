@@ -44,14 +44,26 @@ def scan_start_user(message):
     if myresult[0] <= 0:
         name = message.from_user.first_name 
         asd = f'salom {name} bot xush kelibsiz!\nBu bot Uzini maxsulotini sotish uchun kerak buladi.'
-        bot.send_message(message.chat.id, asd)
+
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        button = KeyboardButton(text='Registraciya')
+        keyboard.add(button)
+      
+        bot.send_message(message.chat.id, asd,  reply_markup=keyboard)
         add_start_user(message)
         
     elif myresult[0]>0:
-        bot.send_message(message.chat.id, "Qaytganingizdan xursandman!")
         mycursor_S = mydb.cursor()
         mycursor_S.execute(f"SELECT * FROM users where telegram =  {str(message.chat.id)}")
         myresult_s = mycursor.fetchall()
+
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        button = KeyboardButton(text='Registraciya')
+        keyboard.add(button)
+      
+        bot.send_message(message.chat.id, "Qaytganingizdan xursandman!",  reply_markup=keyboard)
+
+        
         for i in myresult_s:
             print(i)
             if i[5] == 'user':
@@ -75,6 +87,8 @@ def crete_users_button(message):
         button1 = InlineKeyboardButton(text=f"{i[1]}\n{i[3]}", callback_data=f"users{i[2]}")
         keyboard.add(button1)
         bot.send_message(message.chat.id, text=f"Admin lovizimi berish {i[1]}", reply_markup=keyboard)
+
+
     
 def proverka_nomer(message):
     mydb = connect_to_base("root","","pedagogika")
@@ -85,6 +99,7 @@ def proverka_nomer(message):
         if len(i[3]) < 7 and len(i[4]) < 5:
             bot.send_message(message.chat.id , 'Iltimos registraciyadan uting')
             my_uuid.create_button(message)
+
             
         else:
             bot.send_message(message.chat.id, 'siz alla qachon registraciyadan utgan siz')
@@ -149,11 +164,12 @@ def spam_info():
                 
             photos = y[2]
             text = y[3]
-            cont = y[5]
+            cont = y[6]
+            price = y[5]
             #print(cont)
             #time.sleep(0.3)
-            bot.send_photo(int(i[0]) , photos, caption = f'{text}\n Murojat uchun : {cont}')
-                
+            bot.send_photo(int(i[0]) , photos, caption = f'{text} Maxsulot narxi: {price}\n Murojat uchun : {cont}')
+        
 
 
 
@@ -214,8 +230,8 @@ def add_post():
     mydb = connect_to_base("root","","pedagogika")
     mycursor = mydb.cursor()
     post = my_post.get_posts()
-    sql = "INSERT INTO posts(user_id, image_id, text ) VALUES (%s, %s, %s)"    
-    val = (post["user_id"], post["image_id"], post["text"])
+    sql = "INSERT INTO posts(user_id, image_id, text , prise ) VALUES (%s, %s, %s, %s)"    
+    val = (post["user_id"], post["image_id"], post["text"], post['prise'])
     mycursor.execute(sql, val)
     mydb.commit()
     my_post.clear_item()
@@ -239,11 +255,11 @@ def add_fio(message):
 
 def add_phone(message):
     my_uuid.add_chat_id(message.chat.id)
-    my_uuid.add_phone(message.contact.phone_number, message.chat.id, reply_markup=telebot.types.ReplyKeyboardRemove())
+    my_uuid.add_phone(message.contact.phone_number, message.chat.id)
     check_user(message.chat.id)
     print(my_uuid.users_info)
     asd = 'sizning telefon qabul qilindi'
-    bot.send_message(message.chat.id , asd)
+    bot.send_message(message.chat.id , asd, reply_markup=telebot.types.ReplyKeyboardRemove())
 
 def add_group(message):
     my_uuid.add_chat_id(message.chat.id)
@@ -284,6 +300,23 @@ def add_post_text(message):
     else:
         bot.send_message(message.chat.id , 'siz text junatmadiz!')
 
+def add_text_Photo(message):
+    my_post.add_text(message.text)
+    my_post.add_user_id(message.chat.id)
+    state = my_post.check_post()
+    bot.send_message(message.chat.id, 'Iltimos postning narxini kiriting')
+    bot.register_next_step_handler(message, add_prise)
+
+def add_prise(message):
+    my_post.add_user_id(message.chat.id)
+    my_post.add_prise(message.text)
+    state = my_post.check_post()
+    bot.send_message(message.chat.id, 'Post xaqida xamma kerakli malumot olindi, yaqin orada shu post terqatiladi')
+    if state == 1:
+        add_post()
+
+    
+    
 
 
 @bot.message_handler(commands=['start', 'help', 'admin', 'reg'])
@@ -300,10 +333,17 @@ def send_welcome(message):
                 admin_pages(message)
             elif myresult[0][4] == 'user':
                 scan_start_user(message)
+                keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
             else:
                 print('user')
-                bot.send_message(message.chat.id, 'shu yaqin orada yangi postlar chiqadi!')
                 scan_start_user(message)
+
+                keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+                button = KeyboardButton(text='Registraciya')
+                keyboard.add(button)
+                bot.send_message(message.from_user.id, "hu yaqin orada yangi postlar chiqadi!", reply_markup=keyboard)
+
+                
         elif len(myresult) <= 0:
             scan_start_user(message)
             
@@ -321,6 +361,8 @@ def proverka(message):
         asd = f'{name} familiya va ismingizni kiriting'
         # bot.register_next_step_handler(fioread,message)
         bot.send_message(message.chat.id, asd)
+    elif message.text == 'Registraciya':
+        proverka_nomer(message)
     
        
 @bot.callback_query_handler(func=lambda call: True)
@@ -332,7 +374,7 @@ def inline_answer(call):
     elif(call.data == 'tel'):
         name = call.from_user.first_name
         asd = f'{name} telefon raqamingizni bilan bulishing!'
-        keyboard = ReplyKeyboardMarkup()
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
         button = KeyboardButton(text='Nomer telefoni tashash', request_contact=True)
         keyboard.add(button)
         bot.send_message(call.from_user.id,text=asd, reply_markup=keyboard)
@@ -393,19 +435,14 @@ def number_user(message):
 @bot.message_handler(content_types=['photo'])
 def post_qiish(message):
     global my_post 
-    asd = 'Sizning rasmingiz qabul qilindi!'
+    asd = "Sizning rasmingiz qabul qilindi! Iltimos post xaqida malumot to'ldiring"
     bot.send_message(message.chat.id , asd)   
     photo = message.json["photo"][-1]["file_id"]
     my_post.add_user_id(message.chat.id)
     my_post.add_image_id(photo)
-    my_post.add_text(message.caption)
     state = my_post.check_post()
-    if state == 1:
-        add_post()        
-    #elif message.caprion == '':
-    else:
-        bot.send_message(message.chat.id,"Matnni ham kiriting!")
-        # bot.register_next_step_handler(bot.chat.id, add_post_text)
+
+    bot.register_next_step_handler(message, add_text_Photo)
     
 
 

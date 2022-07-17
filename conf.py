@@ -83,6 +83,7 @@ class Posts():
     def __init__(self):
         self.image_id = ""
         self.text = ""
+        self.prise = ""
         self.user_id = 0
     
     def add_user_id(self,id):
@@ -100,6 +101,10 @@ class Posts():
         self.text = text
         return self.__dict__
     
+    def add_prise(self, prise):
+        self.prise = prise
+        return self.__dict__
+    
     def check_post(self):
         if (len(self.image_id) > 0 and len(self.text) > 0 ):
             return 1
@@ -110,6 +115,7 @@ class Posts():
     def clear_item(self):
         self.image_id = ""
         self.text = ""
+        self.prise = ""
 
 class Send_Post():
     def connect_to_base(self,user,password,database):
